@@ -1,0 +1,417 @@
+{
+  "version": "1.0.0",
+  "websites": {
+    "youtube": {
+      "aliases": [
+        "yutub kholo",
+        "utube",
+        "yutub open koro",
+        "open utub",
+        "open utube",
+        "yutub",
+        "ইউটিউব চালু করো",
+        "utub",
+        "yt চালু করো",
+        "utube চালু করো",
+        "ইউটিউব",
+        "yt open koro",
+        "utub চালু করো",
+        "utube open koro",
+        "ইউটিউব kholo",
+        "open yt",
+        "utub open koro",
+        "utube kholo",
+        "open yutub",
+        "utub kholo",
+        "ইউটিউব open koro",
+        "yt",
+        "open ইউটিউব",
+        "yutub চালু করো",
+        "yt kholo"
+      ],
+      "target": "https://youtube.com"
+    },
+    "google": {
+      "aliases": [
+        "gogle চালু করো",
+        "gugol kholo",
+        "open গুগল",
+        "গুগল open koro",
+        "গুগল kholo",
+        "gogle open koro",
+        "open gugol",
+        "gogle kholo",
+        "gugol চালু করো",
+        "gugol",
+        "gogle",
+        "গুগল",
+        "open gogle",
+        "gugol open koro",
+        "গুগল চালু করো"
+      ],
+      "target": "https://google.com"
+    },
+    "facebook": {
+      "aliases": [
+        "ফেসবুক open koro",
+        "fb",
+        "ফেসবুক চালু করো",
+        "open fb",
+        "fb চালু করো",
+        "ফেসবুক kholo",
+        "open ফেসবুক",
+        "ফেসবুক",
+        "fb kholo",
+        "fb open koro"
+      ],
+      "target": "https://facebook.com"
+    },
+    "instagram": {
+      "aliases": [
+        "ইনস্টাগ্রাম open koro",
+        "insta",
+        "insta kholo",
+        "ইনস্টাগ্রাম চালু করো",
+        "ইনস্টাগ্রাম kholo",
+        "insta চালু করো",
+        "insta open koro",
+        "open ইনস্টাগ্রাম",
+        "ইনস্টাগ্রাম",
+        "open insta"
+      ],
+      "target": "https://instagram.com"
+    },
+    "twitter": {
+      "aliases": [
+        "open টুইটার",
+        "open x",
+        "twitter kholo",
+        "x open koro",
+        "x চালু করো",
+        "টুইটার open koro",
+        "twitter open koro",
+        "x kholo",
+        "টুইটার kholo",
+        "open twitter",
+        "টুইটার চালু করো",
+        "twitter",
+        "টুইটার",
+        "twitter চালু করো",
+        "x"
+      ],
+      "target": "https://twitter.com"
+    },
+    "gmail": {
+      "aliases": [
+        "open gmail",
+        "ইমেইল চালু করো",
+        "gmail চালু করো",
+        "ইমেইল",
+        "gmail open koro",
+        "ইমেইল kholo",
+        "open ইমেইল",
+        "ইমেইল open koro",
+        "gmail",
+        "gmail kholo"
+      ],
+      "target": "https://gmail.com"
+    },
+    "github": {
+      "aliases": [
+        "open গিটহাব",
+        "github চালু করো",
+        "open github",
+        "github",
+        "গিটহাব open koro",
+        "github open koro",
+        "গিটহাব kholo",
+        "গিটহাব চালু করো",
+        "গিটহাব",
+        "github kholo"
+      ],
+      "target": "https://github.com"
+    },
+    "stackoverflow": {
+      "aliases": [
+        "stackoverflow kholo",
+        "stack overflow",
+        "stackoverflow open koro",
+        "open stack overflow",
+        "stack overflow open koro",
+        "stack overflow kholo",
+        "stack overflow চালু করো",
+        "open stackoverflow",
+        "stackoverflow চালু করো",
+        "stackoverflow"
+      ],
+      "target": "https://stackoverflow.com"
+    },
+    "wikipedia": {
+      "aliases": [
+        "wikipedia",
+        "wiki open koro",
+        "open wikipedia",
+        "open wiki",
+        "wikipedia kholo",
+        "wiki চালু করো",
+        "wiki kholo",
+        "wiki",
+        "wikipedia open koro",
+        "wikipedia চালু করো"
+      ],
+      "target": "https://wikipedia.com"
+    },
+    "daraz": {
+      "aliases": [
+        "open দারাজ",
+        "দারাজ kholo",
+        "দারাজ",
+        "দারাজ চালু করো",
+        "দারাজ open koro",
+        "open daraz",
+        "daraz",
+        "daraz kholo",
+        "daraz চালু করো",
+        "daraz open koro"
+      ],
+      "target": "https://daraz.com"
+    },
+    "amazon": {
+      "aliases": [
+        "amazon open koro",
+        "amazon চালু করো",
+        "amazon",
+        "amazon kholo",
+        "open amazon"
+      ],
+      "target": "https://amazon.com"
+    },
+    "netflix": {
+      "aliases": [
+        "netflix চালু করো",
+        "netflix",
+        "open netflix",
+        "netflix open koro",
+        "netflix kholo"
+      ],
+      "target": "https://netflix.com"
+    },
+    "spotify": {
+      "aliases": [
+        "open spotify",
+        "spotify চালু করো",
+        "spotify kholo",
+        "spotify open koro",
+        "spotify"
+      ],
+      "target": "https://spotify.com"
+    },
+    "linkedin": {
+      "aliases": [
+        "linkedin kholo",
+        "open linkedin",
+        "linkedin চালু করো",
+        "linkedin open koro",
+        "linkedin"
+      ],
+      "target": "https://linkedin.com"
+    },
+    "bdjobs": {
+      "aliases": [
+        "bdjobs kholo",
+        "bdjobs",
+        "bdjobs open koro",
+        "open bdjobs",
+        "bdjobs চালু করো"
+      ],
+      "target": "https://bdjobs.com"
+    },
+    "prothomalo": {
+      "aliases": [
+        "prothom alo open koro",
+        "prothom alo চালু করো",
+        "open prothom alo",
+        "prothom alo",
+        "prothom alo kholo"
+      ],
+      "target": "https://prothomalo.com"
+    },
+    "jugantor": {
+      "aliases": [
+        "jugantor open koro",
+        "jugantor",
+        "open jugantor",
+        "jugantor চালু করো",
+        "jugantor kholo"
+      ],
+      "target": "https://jugantor.com"
+    }
+  },
+  "apps": {
+    "chrome": {
+      "aliases": [
+        "google chrome open koro",
+        "open ক্রোম",
+        "chrome চালু করো",
+        "ক্রোম",
+        "ক্রোম kholo",
+        "google chrome kholo",
+        "chrome",
+        "open chrome",
+        "google chrome চালু করো",
+        "ক্রোম চালু করো",
+        "ক্রোম open koro",
+        "open google chrome",
+        "chrome kholo",
+        "google chrome",
+        "chrome open koro"
+      ],
+      "target": "chrome"
+    },
+    "vscode": {
+      "aliases": [
+        "visual studio code চালু করো",
+        "visual studio code",
+        "vs code open koro",
+        "open vs code",
+        "open visual studio code",
+        "vs code kholo",
+        "vs code চালু করো",
+        "visual studio code open koro",
+        "visual studio code kholo",
+        "vs code"
+      ],
+      "target": "vscode"
+    },
+    "notepad": {
+      "aliases": [
+        "notepad চালু করো",
+        "open notepad",
+        "notepad kholo",
+        "notepad",
+        "notepad open koro"
+      ],
+      "target": "notepad"
+    },
+    "calculator": {
+      "aliases": [
+        "calculator kholo",
+        "calculator চালু করো",
+        "calculator open koro",
+        "open calculator",
+        "calculator"
+      ],
+      "target": "calculator"
+    },
+    "word": {
+      "aliases": [
+        "ms word",
+        "ms word kholo",
+        "ms word চালু করো",
+        "open ms word",
+        "ms word open koro"
+      ],
+      "target": "word"
+    },
+    "excel": {
+      "aliases": [
+        "ms excel চালু করো",
+        "ms excel open koro",
+        "ms excel kholo",
+        "ms excel",
+        "open ms excel"
+      ],
+      "target": "excel"
+    },
+    "powerpoint": {
+      "aliases": [
+        "powerpoint kholo",
+        "open powerpoint",
+        "powerpoint",
+        "powerpoint open koro",
+        "powerpoint চালু করো"
+      ],
+      "target": "powerpoint"
+    },
+    "telegram": {
+      "aliases": [
+        "telegram চালু করো",
+        "open telegram",
+        "telegram",
+        "telegram kholo",
+        "telegram open koro"
+      ],
+      "target": "telegram"
+    },
+    "whatsapp": {
+      "aliases": [
+        "whatsapp open koro",
+        "open whatsapp",
+        "whatsapp",
+        "whatsapp kholo",
+        "whatsapp চালু করো"
+      ],
+      "target": "whatsapp"
+    },
+    "discord": {
+      "aliases": [
+        "discord kholo",
+        "discord open koro",
+        "discord",
+        "discord চালু করো",
+        "open discord"
+      ],
+      "target": "discord"
+    },
+    "zoom": {
+      "aliases": [
+        "zoom open koro",
+        "zoom kholo",
+        "zoom চালু করো",
+        "open zoom",
+        "zoom"
+      ],
+      "target": "zoom"
+    },
+    "vlc": {
+      "aliases": [
+        "vlc",
+        "vlc kholo",
+        "open vlc",
+        "vlc open koro",
+        "vlc চালু করো"
+      ],
+      "target": "vlc"
+    },
+    "photoshop": {
+      "aliases": [
+        "photoshop চালু করো",
+        "photoshop kholo",
+        "photoshop open koro",
+        "open photoshop",
+        "photoshop"
+      ],
+      "target": "photoshop"
+    },
+    "pycharm": {
+      "aliases": [
+        "pycharm",
+        "pycharm kholo",
+        "open pycharm",
+        "pycharm open koro",
+        "pycharm চালু করো"
+      ],
+      "target": "pycharm"
+    },
+    "edge": {
+      "aliases": [
+        "edge চালু করো",
+        "open edge",
+        "edge open koro",
+        "edge kholo",
+        "edge"
+      ],
+      "target": "edge"
+    }
+  }
+}

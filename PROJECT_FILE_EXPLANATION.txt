@@ -1,0 +1,1389 @@
+# Jarvis Project File Explanation
+
+Generated on: 2026-05-01
+
+This document explains the Jarvis desktop assistant project file by file. It was written for a student developer, so the language is intentionally direct and practical.
+
+Ignored while scanning: .venv, .git, __pycache__, build, dist, node_modules, *.pyc, runtime/audio/cache, runtime/cache, and temporary log files. Runtime screenshots/audio and model checkpoints are documented as generated artifacts instead of being treated as normal source code.
+
+## Project Overview
+
+Jarvis is a Windows desktop assistant built with Python and PySide6. The UI is in app/ui, the main command brain is in app/core, services live in app/services, persistent data access is in app/data, and datasets/models are in assets, app/generated, and app/models.
+
+The main entry point is app/main.py. It configures Windows/Qt runtime settings, logging, offline mode, database tables, then creates a PySide6 QApplication and shows MainWindow. MainWindow owns the page navigation and connects UI events to AssistantController. AssistantController is the central command router: it receives text or speech, normalizes it, checks hard system actions first, checks alias dataset actions, runs local intent routing, calls automation/system services, optionally asks the AI brain, saves conversations/commands, and sends replies to TTS.
+
+Main architecture layers:
+- UI layer: app/ui/main_window.py and app/ui/pages/*.py.
+- Controller/routing layer: app/core/assistant_controller.py, intent_router.py, command_normalizer.py, dataset matchers.
+- Service layer: app/services/* for speech, system actions, automation, web, AI, hardware, terminal, vision.
+- Data layer: app/data/db.py and repository classes.
+- Datasets/models: assets/system_action_dataset_500.jsonl, app/generated/bd_full_alias_dataset.json, app/models/*.
+
+## Folder Structure
+
+- app/: Main Python package for Jarvis.
+- app/core/: Command routing, intent matching, response formatting, alias/dataset matching, and the central AssistantController.
+- app/data/: SQLite setup and repository classes for commands, conversations, settings, alarms, contacts, analytics, and terminal history.
+- app/generated/: Generated command alias dataset used by the alias matcher.
+- app/models/: Local/offline model artifacts. Qwen LoRA and Bengali speech model files live here.
+- app/runtime/: Generated runtime files such as latest TTS audio and screenshots. Mostly safe to regenerate.
+- app/services/: Operational services: AI providers, automation tools, speech, system control, web search, vision, hardware, terminal.
+- app/ui/: PySide6 UI shell, reusable components, theme constants, and page widgets.
+- assets/: Static datasets and voice assets.
+- data/: SQLite database and runtime app logs. Database is user data.
+- scripts/: Utility and test scripts.
+- tests/: Python test package placeholder.
+
+## File-by-File Explanation
+
+### .env
+Purpose: Stores runtime feature flags and model paths.
+Used for: Offline mode, Bengali TTS behavior, Qwen LoRA selection, persona style, Vosk model path, Piper path/model placeholders.
+Called by: app/main.py through offline_guard; app/services/speech/tts_service.py; app/services/ai/qwen_lora_provider.py and provider setup.
+Imports: None.
+Important values: OFFLINE_MODE, ENABLE_TTS_SELF_TEST, BENGALI_TTS_PROVIDER, USE_QWEN_LORA, USE_TRAINED_QWEN, QWEN_BASE_MODEL, QWEN_LORA_PATH, JARVIS_PERSONA_STYLE, VOSK_MODEL_PATH, PIPER_EXE, PIPER_BN_MODEL.
+Category: config.
+Can delete?: Must keep if you rely on these local settings. The app may run with defaults but behavior will change.
+Notes: No secret was exposed in this file during inspection.
+
+### .gitignore
+Purpose: Tells Git which files/folders not to track.
+Used for: Keeping generated files, local environment files, and caches out of commits.
+Called by: Git only.
+Imports: None.
+Important functions/classes: None.
+Category: config.
+Can delete?: Keep.
+Notes: Consider adding runtime audio/cache, screenshots, logs, and model checkpoints if they should not be versioned.
+
+### README.md
+Purpose: Existing project README.
+Used for: Human documentation.
+Called by: No code imports it.
+Imports: None.
+Important functions/classes: None.
+Category: docs.
+Can delete?: Keep.
+Notes: This new PROJECT_FILE_EXPLANATION.txt complements it.
+
+### requirements.txt
+Purpose: Main Python dependency list.
+Used for: Installing packages needed to run Jarvis.
+Called by: pip/install scripts/manual setup.
+Imports: None.
+Important functions/classes: None.
+Category: config.
+Can delete?: Must keep.
+Notes: Keep this synchronized with imports like PySide6, psutil, speech_recognition, pyautogui, gTTS, pyttsx3, pycaw, comtypes, transformers, etc.
+
+### requirements-optional.txt
+Purpose: Optional dependencies for extra features.
+Used for: Installing non-core or platform-specific capabilities.
+Called by: pip/manual setup.
+Imports: None.
+Important functions/classes: None.
+Category: config.
+Can delete?: Keep.
+Notes: Useful when documenting which features are optional.
+
+### test_tts.py
+Purpose: Small manual test for TTSService.
+Used for: Checking Bengali/English speech output.
+Called by: Developer manually.
+Imports: app.services.speech.tts_service.
+Important functions/classes: None at top level.
+Category: test.
+Can delete?: Safe to delete only if you no longer need manual TTS testing.
+Notes: Could be moved under scripts/ or tests/.
+
+### app/__init__.py
+Purpose: Marks app as a Python package.
+Used for: Imports like app.core.assistant_controller.
+Called by: Python import system.
+Imports: None.
+Important functions/classes: None.
+Category: core.
+Can delete?: Must keep.
+Notes: Empty package files are still meaningful.
+
+### app/app_paths.py
+Purpose: Central project path constants.
+Used for: Locating app root, data folders, runtime folders, hardware scripts, and models.
+Called by: app/main.py, app/data/db.py, terminal service, TTS service, camera service, hardware service, Qwen LoRA provider.
+Imports: pathlib.
+Important functions/classes: Path constants only.
+Category: utility.
+Can delete?: Must keep.
+Notes: Good place to keep all filesystem paths consistent.
+
+### app/main.py
+Purpose: Application entry point.
+Used for: Running python -m app.main.
+Called by: User, IDE, or build executable.
+Imports: app.app_paths, app.services.offline_guard, PySide6 pieces inside main flow, database/UI modules.
+Important functions/classes: _configure_qt_process_environment, _configure_dpi_awareness_once, _configure_logging, _ensure_project_venv_or_warn, _startup_diagnostics, main.
+Category: core.
+Can delete?: Must keep.
+Notes: This file should stay small and only handle startup/bootstrap.
+
+### app/core/__init__.py
+Purpose: Core package initializer.
+Used for: app.core imports.
+Called by: Python import system and all app.core.* imports.
+Imports: Not fully confirmed. It contains patch/import hook code related to AssistantController.
+Important functions/classes: _patch_assistant_controller, _AssistantControllerPatchLoader, _AssistantControllerPatchFinder.
+Category: core.
+Can delete?: Must keep while the patch hook is needed.
+Notes: Known issue: package __init__ doing patching is surprising. Prefer moving patch behavior into explicit startup code if possible.
+
+### app/core/action_registry.py
+Purpose: Simple registry mapping action names to callables.
+Used for: Local intent actions after IntentRouter selects an action.
+Called by: AssistantController.
+Imports: collections.abc.
+Important functions/classes: ActionRegistry.
+Category: core.
+Can delete?: Must keep unless AssistantController stops using registered actions.
+Notes: Small and clean.
+
+### app/core/assistant_controller.py
+Purpose: Main orchestration class for all commands.
+Used for: Text input, voice input, UI actions, settings, scheduling, TTS preview, command logging.
+Called by: app/ui/main_window.py and UI pages indirectly through MainWindow/controller.
+Imports: action registry, advanced brain, intent router, locale responses, command normalizer, alias matcher/executor, system action dataset/executor, repositories, automation services, STT/TTS, app launcher, file automation, web search, OCR.
+Important functions/classes: create_controller, AssistantController.process, listen_once_and_process, apply_speech_preferences, calibrate_ambient_noise, _try_pending_system_confirmation, _try_alias_command, _try_dataset_system_action, _system_control_response.
+Category: core.
+Can delete?: Must keep.
+Notes: Known issue: very large file with many responsibilities. Suggested improvement: split command routing, voice settings, persistence logging, and direct-action helpers into smaller modules.
+
+### app/core/command_normalizer.py
+Purpose: Normalizes spoken/text commands and extracts app/search names.
+Used for: Dataset matching, alias matching, system control, Google/web search routing.
+Called by: assistant_controller, alias_dataset_loader, alias_command_matcher, system_action_dataset_loader, system_control.
+Imports: Standard library only.
+Important functions/classes: normalize_voice_command, resolve_app_name, is_google_search_command, extract_google_search_query, is_open_app_command, extract_app_name.
+Category: core.
+Can delete?: Must keep.
+Notes: Central to Bengali/English voice command reliability.
+
+### app/core/fuzzy_intent_matcher.py
+Purpose: Fuzzy local command matcher for common intents.
+Used for: IntentRouter fallback/assistive matching.
+Called by: app/core/intent_router.py.
+Imports: difflib/re style standard library.
+Important functions/classes: FuzzyIntentMatch, match_fuzzy_intent.
+Category: core.
+Can delete?: Keep unless all fuzzy matching is replaced by datasets.
+Notes: Could overlap with alias_command_matcher and system_action_dataset_loader.
+
+### app/core/intent_router.py
+Purpose: Rule-based command router for local intents.
+Used for: Selecting actions like greeting, YouTube, WhatsApp, file/desktop commands, system tools.
+Called by: AssistantController.
+Imports: fuzzy_intent_matcher, locale_responses, windows_desktop, youtube_multimodal.
+Important functions/classes: IntentResult, IntentRouter, _bangla_implies_open_or_launch.
+Category: core.
+Can delete?: Must keep unless replaced by dataset-only routing.
+Notes: Some routing now happens before this in AssistantController: hard system actions and alias dataset actions.
+
+### app/core/locale_responses.py
+Purpose: Language detection and localized response helpers.
+Used for: Bengali/English reply selection, persona text, greetings, unknown replies, YouTube replies, TTS failure messages.
+Called by: assistant_controller and intent_router.
+Imports: Standard library only.
+Important functions/classes: normalize_unicode, text_looks_bengali, resolve_reply_language, infer_lang_from_stt_code, strip_mode_suffix, feedback_prefix, format_time_bn, chitchat_response, soft_unknown_reply, localize_action_result.
+Category: core.
+Can delete?: Must keep.
+Notes: Good place for response language consistency.
+
+### app/core/response_engine.py
+Purpose: Formats generic responses from intent/action results.
+Used for: AssistantController final response behavior.
+Called by: AssistantController.
+Imports: Standard library only.
+Important functions/classes: ResponseEngine.
+Category: core.
+Can delete?: Keep, but verify current usage because AssistantController also does a lot of response formatting itself.
+Notes: Possible cleanup target if duplicated.
+
+### app/core/advanced_brain.py
+Purpose: Decides when and how to use AI provider replies.
+Used for: Offline/local/LLM conversational responses after local command routing.
+Called by: AssistantController.
+Imports: app.services.ai provider router.
+Important functions/classes: ActionIntent, AdvancedBrain, _log_action.
+Category: core.
+Can delete?: Must keep if AI chat/reasoning should work.
+Notes: Good boundary between command router and AI provider layer.
+
+### app/core/alias_dataset_loader.py
+Purpose: Loads app/generated/bd_full_alias_dataset.json into AliasAction objects.
+Used for: Alias website/app matching.
+Called by: alias_command_matcher and action_executor.
+Imports: json, pathlib, normalize_voice_command.
+Important functions/classes: AliasAction, dataset_path, load_alias_actions.
+Category: dataset/core.
+Can delete?: Must keep if alias dataset is used.
+Notes: Uses lru_cache, so dataset changes may require app restart.
+
+### app/core/alias_command_matcher.py
+Purpose: Fuzzy matches user text against website/app aliases.
+Used for: Opening websites/apps from dataset aliases.
+Called by: AssistantController and scripts/test_alias_dataset.py.
+Imports: difflib.SequenceMatcher, alias_dataset_loader, command_normalizer.
+Important functions/classes: AliasMatch, match_alias_command, _score.
+Category: core.
+Can delete?: Must keep if app/site alias commands are needed.
+Notes: Current thresholds are execute >= 0.90 and confirm >= 0.78. This avoids wrong matches like "voliom komao" -> Zoom.
+
+### app/core/action_executor.py
+Purpose: Safely executes alias actions.
+Used for: open_url and open_app actions from bd_full_alias_dataset.json.
+Called by: AssistantController and alias test script.
+Imports: webbrowser, urlparse, app.services.system.app_launcher.
+Important functions/classes: ActionExecutionResult, execute_alias_action, _open_url, _open_app.
+Category: service/core.
+Can delete?: Must keep if alias actions should execute.
+Notes: Correctly avoids raw code execution. It only supports safe app/url actions.
+
+### app/core/system_action_dataset_loader.py
+Purpose: Loads and matches system action commands from assets datasets plus hard rules.
+Used for: volume, mute, Bluetooth, screenshot, folders, power, system info, time/date commands.
+Called by: AssistantController and system_action_executor.
+Imports: json, re, pathlib, normalize_voice_command.
+Important functions/classes: SystemActionExample, load_system_action_examples, match_system_action, match_dataset_action, _match_hard_rule, _match_alias_rule.
+Category: dataset/core.
+Can delete?: Must keep.
+Notes: Hard rules intentionally run before fuzzy dataset matching so system actions are not mistaken for app aliases.
+
+### app/data/__init__.py
+Purpose: Marks app.data as a package.
+Used for: Repository imports.
+Called by: Python import system.
+Imports: None.
+Important functions/classes: None.
+Category: data.
+Can delete?: Must keep.
+Notes: Empty but required for stable imports.
+
+### app/data/db.py
+Purpose: SQLite connection and schema initialization.
+Used for: Creating and accessing data/jarvis.db.
+Called by: all repository classes and terminal service.
+Imports: app.app_paths.
+Important functions/classes: get_connection, init_db.
+Category: data.
+Can delete?: Must keep.
+Notes: Schema changes should be handled carefully to avoid breaking existing user data.
+
+### app/data/analytics_repository.py
+Purpose: Stores and reads analytics events.
+Used for: Brain/analytics page and controller event logging.
+Called by: AnalyticsService.
+Imports: app.data.db.
+Important functions/classes: AnalyticsRepository.
+Category: data.
+Can delete?: Keep if analytics UI is needed.
+Notes: Could be optional if analytics feature is removed.
+
+### app/data/terminal_repository.py
+Purpose: Stores terminal command history/results.
+Used for: SafeTerminalService and Vision/terminal UI.
+Called by: app.services.terminal_service.
+Imports: app.data.db.
+Important functions/classes: TerminalRepository.
+Category: data.
+Can delete?: Keep if terminal page is used.
+Notes: Not part of core voice command routing.
+
+### app/data/repositories/alarm_repository.py
+Purpose: CRUD wrapper for alarms.
+Used for: Scheduler features.
+Called by: AssistantController.
+Imports: app.data.db.
+Important functions/classes: AlarmRepository.
+Category: data.
+Can delete?: Keep if scheduler/alarms are used.
+Notes: Repository style keeps SQL away from UI/controller.
+
+### app/data/repositories/command_repository.py
+Purpose: Stores command history.
+Used for: Logging user commands, actions, responses, confidence.
+Called by: AssistantController.
+Imports: app.data.db.
+Important functions/classes: CommandRepository.
+Category: data.
+Can delete?: Must keep for command history.
+Notes: Useful for debugging routing bugs.
+
+### app/data/repositories/contacts_repository.py
+Purpose: Stores contacts for WhatsApp or communication flows.
+Used for: AssistantController WhatsApp recipient resolution.
+Called by: AssistantController.
+Imports: app.data.db.
+Important functions/classes: ContactsRepository.
+Category: data.
+Can delete?: Keep if WhatsApp/contact features are used.
+Notes: Not fully confirmed how populated from UI.
+
+### app/data/repositories/conversation_repository.py
+Purpose: Stores chat/conversation messages.
+Used for: Chat history and AI context.
+Called by: AssistantController.
+Imports: app.data.db.
+Important functions/classes: ConversationRepository.
+Category: data.
+Can delete?: Must keep if conversation history and brain context are needed.
+Notes: Consider pruning old history for performance.
+
+### app/data/repositories/settings_repository.py
+Purpose: Persists UI and voice settings.
+Used for: Voice page, TTS/STT config, controller defaults, terminal permissions.
+Called by: AssistantController and SafeTerminalService.
+Imports: app.data.db.
+Important functions/classes: SettingsRepository.
+Category: data.
+Can delete?: Must keep.
+Notes: App behavior depends heavily on settings values.
+
+### app/data/repositories/time_management_repository.py
+Purpose: Stores tasks/focus items/time management records.
+Used for: Scheduler/task features.
+Called by: AssistantController.
+Imports: app.data.db.
+Important functions/classes: TimeManagementRepository.
+Category: data.
+Can delete?: Keep if task/scheduler features are used.
+Notes: Could be merged with alarm repository if the feature is simplified.
+
+### app/data/repositories/__init__.py
+Purpose: Re-exports repository classes.
+Used for: Cleaner imports.
+Called by: AssistantController and terminal service.
+Imports: all repository modules.
+Important functions/classes: None.
+Category: data.
+Can delete?: Keep.
+Notes: Convenience package file.
+
+### app/generated/bd_full_alias_dataset.json
+Purpose: Generated Bengali/English alias dataset for websites and apps.
+Used for: Commands like "utub open", "gogle kholo", "zoom kholo".
+Called by: alias_dataset_loader.
+Imports: None.
+Important functions/classes: JSON data only.
+Category: dataset.
+Can delete?: Must keep if alias matching is required.
+Notes: If regenerated, test with scripts/test_alias_dataset.py and scripts/test_command_routing.py.
+
+### assets/.gitkeep
+Purpose: Keeps assets folder in Git even if empty.
+Used for: Repository structure.
+Called by: No code.
+Imports: None.
+Important functions/classes: None.
+Category: asset.
+Can delete?: Safe if assets folder contains other tracked files.
+Notes: Harmless.
+
+### assets/system_action_dataset.txt
+Purpose: Text version of system action examples.
+Used for: fallback system dataset loading if JSONL is absent.
+Called by: system_action_dataset_loader.
+Imports: None.
+Important functions/classes: Dataset only.
+Category: dataset.
+Can delete?: Keep as backup/reference.
+Notes: JSONL appears preferred when available.
+
+### assets/system_action_dataset_500.jsonl
+Purpose: Main system action dataset with structured records.
+Used for: Matching system commands and creating SystemActionExample objects.
+Called by: system_action_dataset_loader.
+Imports: None.
+Important functions/classes: Dataset only.
+Category: dataset.
+Can delete?: Must keep for dataset system actions.
+Notes: Must align action/target names with system_action_executor.py.
+
+### assets/voices/bangla_voice.wav
+Purpose: Static Bengali voice/audio asset.
+Used for: TTS or voice testing. Not fully confirmed.
+Called by: Not directly confirmed in imports.
+Imports: None.
+Important functions/classes: Audio file.
+Category: asset.
+Can delete?: Keep unless confirmed unused.
+Notes: Search direct filename before deleting.
+
+### data/jarvis.db
+Purpose: SQLite database containing app state/history/settings.
+Used for: Repositories in app/data.
+Called by: app/data/db.py.
+Imports: None.
+Important functions/classes: Database tables.
+Category: data.
+Can delete?: Do not delete unless you intentionally want to reset app data.
+Notes: This is user data, not source code.
+
+### app/services/__init__.py
+Purpose: Marks services as a package.
+Used for: app.services imports.
+Called by: Many app modules.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/services/offline_guard.py
+Purpose: Controls offline mode and blocks internet-dependent operations when configured.
+Used for: Main startup and network/AI/automation services.
+Called by: app/main.py, AI providers, network_tools, weather_tools, WhatsApp, YouTube automation.
+Imports: Standard library.
+Important functions/classes: offline_mode_enabled, block_internet, log_offline_mode, install_internet_block.
+Category: service.
+Can delete?: Keep if offline mode matters.
+Notes: OFFLINE_MODE=true in .env means some internet features may be blocked.
+
+### app/services/analytics_service.py
+Purpose: Higher-level analytics API for UI/controller.
+Used for: Brain/analytics page and event summaries.
+Called by: AssistantController and BrainPage.
+Imports: AnalyticsRepository.
+Important functions/classes: AnalyticsService.
+Category: service.
+Can delete?: Keep if analytics page is used.
+Notes: Could be optional in minimal builds.
+
+### app/services/terminal_service.py
+Purpose: Safe terminal command execution service.
+Used for: Vision/terminal UI page.
+Called by: app/ui/pages/vision_page.py.
+Imports: app_paths, db, settings_repository, terminal_repository.
+Important functions/classes: SafeTerminalService.
+Category: service.
+Can delete?: Keep if terminal UI is used.
+Notes: Review safety rules before exposing more shell features.
+
+### app/services/ai/__init__.py
+Purpose: Re-exports AI provider classes.
+Used for: AdvancedBrain imports.
+Called by: app/core/advanced_brain.py.
+Imports: context_builder, providers, qwen_lora_provider.
+Important functions/classes: None.
+Category: service.
+Can delete?: Keep.
+Notes: Convenience package file.
+
+### app/services/ai/context_builder.py
+Purpose: Builds conversation/context prompt data for AI providers.
+Used for: Provider router and Qwen LoRA provider.
+Called by: providers.py and qwen_lora_provider.py.
+Imports: typing.
+Important functions/classes: ContextBuilder.
+Category: service.
+Can delete?: Keep if AI replies need history/context.
+Notes: Good place to tune system prompts/context length.
+
+### app/services/ai/providers.py
+Purpose: Defines AI provider interfaces and routing.
+Used for: Local fallback and optional external/local model providers.
+Called by: app/services/ai/__init__.py and qwen_lora_provider.py.
+Imports: ContextBuilder, offline_guard.
+Important functions/classes: AIProviderError, AIProvider, LocalFallbackProvider, AIProviderRouter.
+Category: service.
+Can delete?: Must keep for AI brain layer.
+Notes: Mentions provider architecture. Groq/Gemini may have existed earlier, but current visible provider file focuses on generic router/local fallback plus Qwen import through package.
+
+### app/services/ai/qwen_lora_provider.py
+Purpose: Loads and runs the local Qwen LoRA model when enabled.
+Used for: Offline/local AI responses.
+Called by: app/services/ai/__init__.py and provider router.
+Imports: app_paths, ContextBuilder, provider base classes; optional transformers/torch/peft at runtime.
+Important functions/classes: QwenLoraProvider.
+Category: service/model.
+Can delete?: Keep if USE_QWEN_LORA or USE_TRAINED_QWEN is used.
+Notes: Heavy dependencies may be optional. Add clear error messages when model packages are missing.
+
+### app/services/automation/__init__.py
+Purpose: Marks automation as a package.
+Used for: automation imports.
+Called by: AssistantController and IntentRouter.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/services/automation/email_tools.py
+Purpose: Generates, previews, edits, and sends email text.
+Used for: Email automation commands.
+Called by: AssistantController.
+Imports: re, smtplib, email.message.
+Important functions/classes: generate_email, generate_formal_email, generate_leave_email, preview_email, edit_email, send_email.
+Category: service.
+Can delete?: Keep if email automation is used.
+Notes: Sending email needs configuration and should avoid hardcoded credentials.
+
+### app/services/automation/music_tools.py
+Purpose: Simple local music playback/playlist control.
+Used for: Music commands.
+Called by: AssistantController.
+Imports: random, pathlib.
+Important functions/classes: set_music_folder, play_music, play_random_music, next_track, previous_track, stop_music.
+Category: service.
+Can delete?: Keep if music feature is used.
+Notes: Not fully confirmed whether playback uses OS associations or another player.
+
+### app/services/automation/network_tools.py
+Purpose: Network utility commands.
+Used for: Speed test/status commands.
+Called by: AssistantController.
+Imports: offline_guard.
+Important functions/classes: run_speedtest, last_speedtest.
+Category: service.
+Can delete?: Keep if network tools are used.
+Notes: Offline mode may block real network checks.
+
+### app/services/automation/system_tools.py
+Purpose: Older/general system automation functions.
+Used for: Registered local actions like time, battery, notepad, Google/YouTube, system status.
+Called by: AssistantController.
+Imports: psutil, platform, subprocess, offline_guard, app_launcher.
+Important functions/classes: get_time, get_battery, open_notepad, system_status, system_info, open_google, open_youtube, youtube_search, youtube_play, greet, unknown.
+Category: service.
+Can delete?: Keep for legacy/local actions, but some overlap exists with system_action_executor.py.
+Notes: Possible duplication with app/services/system/system_action_executor.py.
+
+### app/services/automation/weather_tools.py
+Purpose: Weather automation helper.
+Used for: Weather command support. Not fully confirmed in current routing.
+Called by: No direct import found in the scan.
+Imports: offline_guard.
+Important functions/classes: current_weather.
+Category: service.
+Can delete?: Maybe unused, but confirm before deleting.
+Notes: Current AssistantController appears to use web_search_service for weather.
+
+### app/services/automation/whatsapp_tools.py
+Purpose: WhatsApp Web automation and recipient/message helpers.
+Used for: WhatsApp commands.
+Called by: AssistantController.
+Imports: json, os, re, time, urllib.parse, offline_guard.
+Important functions/classes: open_whatsapp, resolve_whatsapp_recipient, send_whatsapp_to, send_whatsapp_message, send_whatsapp_file, send_whatsapp.
+Category: service.
+Can delete?: Keep if WhatsApp feature is used.
+Notes: Browser automation can be timing-sensitive.
+
+### app/services/automation/windows_desktop.py
+Purpose: Resolves and launches Windows desktop files, folders, apps, and ambiguous picks.
+Used for: Desktop/file launch commands.
+Called by: AssistantController and IntentRouter.
+Imports: os, json, shutil, subprocess, dataclasses, datetime.
+Important functions/classes: DesktopOutcome, resolve_desktop_command, complete_pick, extend_app_alias, open_folder, search_file, get_latest_file, execute_file_control.
+Category: service.
+Can delete?: Keep if Windows desktop/file control is used.
+Notes: Large module. Consider splitting app launch, file search, and ambiguity handling.
+
+### app/services/automation/youtube_multimodal.py
+Purpose: Parses and executes YouTube search/play commands.
+Used for: YouTube voice/text commands.
+Called by: IntentRouter.
+Imports: dataclasses, unicodedata, offline_guard.
+Important functions/classes: YouTubeIntent, mentions_youtube, extract_youtube_query, parse_youtube_multimodal, parse_standalone_song_youtube, execute_youtube.
+Category: service.
+Can delete?: Keep if YouTube commands are used.
+Notes: Works alongside app_launcher/open_url behavior.
+
+### app/services/system/__init__.py
+Purpose: Marks system services as a package.
+Used for: system service imports.
+Called by: action_executor, assistant_controller, system_tools, system_action_executor.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/services/system/app_launcher.py
+Purpose: Safely opens known apps, paths, and web searches.
+Used for: Alias executor, system action executor, direct open_app commands.
+Called by: action_executor, AssistantController, system_tools, system_action_executor.
+Imports: os, subprocess, webbrowser, pathlib, urllib.parse.
+Important functions/classes: LaunchResult, open_app, google_search.
+Category: service.
+Can delete?: Must keep.
+Notes: Important security boundary: avoid executing unsafe raw strings.
+
+### app/services/system/file_automation.py
+Purpose: Opens folders/files/recent files and searches default directories.
+Used for: File automation commands.
+Called by: AssistantController.
+Imports: os, subprocess, pathlib, difflib.
+Important functions/classes: FileActionResult, open_folder, open_file, open_recent_file, open_project_folder, find_file_by_name, is_file_automation_command, handle_file_automation_command.
+Category: service.
+Can delete?: Keep if file/folder commands are used.
+Notes: Some overlap with windows_desktop.py.
+
+### app/services/system/system_action_executor.py
+Purpose: Executes matched dataset system actions safely.
+Used for: Real Windows actions after system_action_dataset_loader returns a record.
+Called by: AssistantController.
+Imports: system_action_dataset_loader, app_launcher, system_control, ctypes, socket, psutil/shutil/subprocess at runtime.
+Important functions/classes: SystemActionExecutionResult, execute_system_action, execute_dataset_action, execute_confirmed_dataset_action, _execute_set_volume, execute_volume_target, _execute_get_system_info, _screenshot, _open_settings.
+Category: service.
+Can delete?: Must keep.
+Notes: This is the preferred executor for dataset system actions. It includes safe volume key fallback and confirmation for dangerous power actions.
+
+### app/services/system/system_control.py
+Purpose: Older rule-based system action matcher/executor.
+Used for: Some legacy direct system control paths and confirmed action helpers.
+Called by: AssistantController and system_action_executor.
+Imports: command_normalizer, ctypes, subprocess, pathlib.
+Important functions/classes: SystemControlResult, match_system_action, execute_system_action, execute_confirmed_action, execute_volume_target.
+Category: service.
+Can delete?: Keep for now because system_action_executor imports execute_confirmed_action.
+Notes: Possible duplication with system_action_dataset_loader plus system_action_executor.
+
+### app/services/speech/__init__.py
+Purpose: Marks speech services as a package.
+Used for: speech imports.
+Called by: AssistantController, STT services, main window, test_tts.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/services/speech/google_stt_service.py
+Purpose: Google SpeechRecognition provider with microphone preprocessing.
+Used for: Voice-to-text input.
+Called by: STTService.
+Imports: speech_recognition, audioop, time, PyAudio/PyAudioWPatch import handling.
+Important functions/classes: GoogleSTTService, GoogleSTTResult, GoogleSTTError subclasses, audio_backend_description.
+Category: service.
+Can delete?: Must keep for Google STT.
+Notes: Current preprocessing adjusts ambient noise, stabilizes low energy thresholds, trims silence, normalizes volume, and rejects too-short/noisy audio.
+
+### app/services/speech/stt_service.py
+Purpose: Wrapper around GoogleSTTService.
+Used for: Controller voice transcription and realtime voice service.
+Called by: AssistantController and realtime_voice_service.
+Imports: google_stt_service.
+Important functions/classes: STTResult, STTService.
+Category: service.
+Can delete?: Must keep.
+Notes: Good abstraction if you add another STT provider later.
+
+### app/services/speech/tts_service.py
+Purpose: Text-to-speech service for English SAPI/pyttsx3 and Bengali fallback/offline/gTTS behavior.
+Used for: Assistant spoken replies and TTS preview.
+Called by: AssistantController and test_tts.py.
+Imports: app_paths and many optional audio/TTS libraries at runtime.
+Important functions/classes: _TTSEngineManager, TTSService, split_text_chunks, _audio_cache_path, _play_mp3_file.
+Category: service.
+Can delete?: Must keep for voice replies.
+Notes: File begins with BOM/non-printable marker, which can confuse some AST tools. Consider saving as clean UTF-8 without BOM.
+
+### app/services/speech/realtime_voice_service.py
+Purpose: Qt-friendly realtime microphone wrapper.
+Used for: Live/realtime voice UI features.
+Called by: Not directly confirmed from main window in current import list, but likely intended for voice mode.
+Imports: PySide6.QtCore, STTService.
+Important functions/classes: RealtimeSpeechResult, RealtimeMicrophoneService.
+Category: service.
+Can delete?: Keep if realtime voice mode is used.
+Notes: Not fully confirmed in current execution path.
+
+### app/services/speech/wake_word_service.py
+Purpose: Detects and strips wake words.
+Used for: Voice loop in MainWindow.
+Called by: app/ui/main_window.py.
+Imports: re.
+Important functions/classes: normalize_wake_text, is_wake_word, strip_wake_word.
+Category: service.
+Can delete?: Keep if wake word mode is used.
+Notes: Lightweight and useful.
+
+### app/services/web/__init__.py
+Purpose: Marks web services as a package.
+Used for: web service imports.
+Called by: AssistantController.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/services/web/web_search_service.py
+Purpose: Web search wrapper and result summarizer.
+Used for: Weather and web search commands.
+Called by: AssistantController.
+Imports: urllib.parse, dataclasses, optional duckduckgo_search at runtime.
+Important functions/classes: SearchResult, SearchResponse, search_web, _build_summary.
+Category: service.
+Can delete?: Keep if web/weather search is used.
+Notes: Offline mode and missing network can affect results.
+
+### app/services/vision/__init__.py
+Purpose: Marks vision services as a package.
+Used for: vision imports.
+Called by: AssistantController and MainWindow.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/services/vision/camera_service.py
+Purpose: Captures a camera frame.
+Used for: Vision page/camera workflows.
+Called by: app/ui/main_window.py.
+Imports: app_paths, pathlib, optional camera libraries at runtime.
+Important functions/classes: capture_single_frame.
+Category: service.
+Can delete?: Keep if vision/camera feature is used.
+Notes: Not fully confirmed whether camera backend dependency is installed.
+
+### app/services/vision/ocr_service.py
+Purpose: OCR helper using Tesseract.
+Used for: Image-to-text commands.
+Called by: AssistantController.
+Imports: pathlib, shutil.
+Important functions/classes: image_to_text, _resolve_tesseract, _preprocess_for_ocr.
+Category: service.
+Can delete?: Keep if OCR feature is used.
+Notes: Needs Tesseract installed/configured.
+
+### app/services/hardware/__init__.py
+Purpose: Marks hardware services as a package.
+Used for: hardware imports.
+Called by: Not directly confirmed.
+Imports: None.
+Important functions/classes: None.
+Category: service.
+Can delete?: Keep if hardware folder stays.
+Notes: Empty package marker.
+
+### app/services/hardware/hardware_service.py
+Purpose: Lists and executes hardware hook scripts.
+Used for: Custom hardware integration.
+Called by: Not directly confirmed in current UI/controller imports.
+Imports: subprocess, pathlib, app_paths.
+Important functions/classes: list_hardware_scripts, execute_hardware_stub.
+Category: service.
+Can delete?: Maybe unused, but keep if hardware experiments are planned.
+Notes: Any script execution feature should stay permission-limited.
+
+### app/ui/__init__.py
+Purpose: Marks UI as a package.
+Used for: UI imports.
+Called by: app/main.py and other UI modules.
+Imports: None.
+Important functions/classes: None.
+Category: UI.
+Can delete?: Must keep.
+Notes: Empty package marker.
+
+### app/ui/theme.py
+Purpose: Central styling constants and Qt stylesheet text.
+Used for: MainWindow, components, and pages.
+Called by: most app/ui modules.
+Imports: None.
+Important functions/classes: Theme constants only.
+Category: UI.
+Can delete?: Must keep for consistent styling.
+Notes: Good place to reduce duplicate colors/styles.
+
+### app/ui/components.py
+Purpose: Reusable PySide6 UI widgets/components.
+Used for: Page layouts and shared visual elements.
+Called by: api_brain_page, automation_page, brain_page, home_page, settings_page, vision_page.
+Imports: PySide6, app.ui.theme.
+Important functions/classes: PremiumCard, HeroPanel, StatMiniCard, StatusChip, ShellTopBar, NeuralCard, NeuralStatusOrb, NeuralComposer, NeuralNavButton, NeuralButton, page_header, compact_panel, utility_button.
+Category: UI.
+Can delete?: Must keep if pages use these widgets.
+Notes: Large component file; consider splitting visual primitives from page-specific widgets.
+
+### app/ui/main_window.py
+Purpose: Main PySide6 window and page navigation shell.
+Used for: Loading all UI pages and connecting UI events to AssistantController.
+Called by: app/main.py.
+Imports: AssistantController, camera_service, wake_word_service, all page classes, theme.
+Important functions/classes: MainWindow, _VoiceLoopWorker.
+Category: UI.
+Can delete?: Must keep.
+Notes: Central UI coordinator. Voice loop and page setup could be split if it grows further.
+
+### app/ui/pages/home_page.py
+Purpose: Main command/chat page.
+Used for: Text command input, microphone command input, displaying assistant replies.
+Called by: MainWindow.
+Imports: PySide6, app.ui.components, app.ui.theme.
+Important functions/classes: HomePage.
+Category: UI.
+Can delete?: Must keep for primary app workflow.
+Notes: Home input routes to AssistantController.process through MainWindow.
+
+### app/ui/pages/voice_page.py
+Purpose: Voice settings page.
+Used for: STT language, voice reply, wake word, noise reduction, mic sensitivity, Bengali TTS speed/settings.
+Called by: MainWindow.
+Imports: PySide6, math, app.ui.theme.
+Important functions/classes: WaveformWidget, VoiceCard, VoicePage.
+Category: UI.
+Can delete?: Keep if voice settings are used.
+Notes: Should stay synchronized with AssistantController.apply_speech_preferences.
+
+### app/ui/pages/voice_mode_page.py
+Purpose: Visual voice mode page.
+Used for: Voice assistant interaction screen with animated visual elements.
+Called by: MainWindow.
+Imports: PySide6, math, random, time, app.ui.theme.
+Important functions/classes: ParticleBulbWidget, VoiceModePage.
+Category: UI.
+Can delete?: Keep if voice mode is used.
+Notes: Mostly UI/animation.
+
+### app/ui/pages/settings_page.py
+Purpose: General settings UI.
+Used for: Configuring app preferences.
+Called by: MainWindow.
+Imports: PySide6, dataclasses, components, theme.
+Important functions/classes: _Choice, SettingsPage.
+Category: UI.
+Can delete?: Keep.
+Notes: Make sure settings keys match SettingsRepository and AssistantController.
+
+### app/ui/pages/scheduler_page.py
+Purpose: Scheduler/task/alarm page.
+Used for: Viewing/creating/deleting alarms and tasks.
+Called by: MainWindow.
+Imports: PySide6, theme.
+Important functions/classes: SchedulerPage.
+Category: UI.
+Can delete?: Keep if scheduler feature is used.
+Notes: Depends on controller repositories.
+
+### app/ui/pages/brain_page.py
+Purpose: Analytics/brain dashboard page.
+Used for: Showing charts, gauges, and assistant activity stats.
+Called by: MainWindow.
+Imports: PySide6, components, AnalyticsService, theme.
+Important functions/classes: LineChartWidget, DonutWidget, GaugeWidget, BrainPage.
+Category: UI.
+Can delete?: Keep if analytics/brain dashboard is used.
+Notes: Visual widgets are page-specific and could stay here.
+
+### app/ui/pages/api_brain_page.py
+Purpose: API/AI brain settings page.
+Used for: Configuring or displaying provider-related AI settings. Not fully confirmed.
+Called by: MainWindow.
+Imports: PySide6, components, theme.
+Important functions/classes: ApiBrainPage.
+Category: UI.
+Can delete?: Keep if AI settings UI is used.
+Notes: Confirm which provider options are active.
+
+### app/ui/pages/automation_page.py
+Purpose: Automation features page.
+Used for: UI surface for automation tools. Not fully confirmed.
+Called by: MainWindow.
+Imports: PySide6, components, theme.
+Important functions/classes: AutomationPage.
+Category: UI.
+Can delete?: Keep if automation page is shown.
+Notes: Check whether buttons are wired to controller actions.
+
+### app/ui/pages/vision_page.py
+Purpose: Vision and terminal page.
+Used for: Camera/OCR/terminal related interface.
+Called by: MainWindow.
+Imports: PySide6, terminal_service, components, theme.
+Important functions/classes: _TerminalInput, VisionPage.
+Category: UI.
+Can delete?: Keep if vision/terminal features are used.
+Notes: Terminal safety should be reviewed carefully.
+
+### app/models/jarvis-qwen-lora/adapter_config.json
+Purpose: LoRA adapter configuration.
+Used for: Loading the trained Qwen LoRA adapter.
+Called by: qwen_lora_provider through model loading libraries.
+Imports: None.
+Important functions/classes: Model metadata only.
+Category: model.
+Can delete?: Must keep if using Qwen LoRA.
+Notes: Keep with adapter_model.safetensors.
+
+### app/models/jarvis-qwen-lora/adapter_model.safetensors
+Purpose: Main trained LoRA adapter weights.
+Used for: Local Qwen AI responses.
+Called by: qwen_lora_provider through transformers/peft.
+Imports: None.
+Important functions/classes: Binary model weights.
+Category: model.
+Can delete?: Must keep if using Qwen LoRA.
+Notes: Large binary artifact.
+
+### app/models/jarvis-qwen-lora/tokenizer.json
+Purpose: Tokenizer data for the model.
+Used for: Encoding/decoding model prompts.
+Called by: model loading libraries.
+Imports: None.
+Important functions/classes: Tokenizer data.
+Category: model.
+Can delete?: Keep with model.
+Notes: Required for reliable model text processing.
+
+### app/models/jarvis-qwen-lora/tokenizer_config.json
+Purpose: Tokenizer configuration.
+Used for: Model/tokenizer loading.
+Called by: model loading libraries.
+Imports: None.
+Important functions/classes: Config only.
+Category: model.
+Can delete?: Keep with model.
+Notes: Required companion file.
+
+### app/models/jarvis-qwen-lora/chat_template.jinja
+Purpose: Chat prompt template for the model.
+Used for: Formatting conversation into the model's expected chat format.
+Called by: tokenizer/model loading.
+Imports: None.
+Important functions/classes: Template only.
+Category: model.
+Can delete?: Keep if model expects chat template.
+Notes: Editing this changes model prompt style.
+
+### app/models/jarvis-qwen-lora/README.md
+Purpose: Model card/readme for the LoRA output.
+Used for: Human reference.
+Called by: No code directly.
+Imports: None.
+Important functions/classes: None.
+Category: docs/model.
+Can delete?: Safe but useful to keep.
+Notes: Good place to record training details.
+
+### app/models/jarvis-qwen-lora/all_results.json
+Purpose: Training/evaluation results.
+Used for: Human/model training reference.
+Called by: No runtime code confirmed.
+Imports: None.
+Important functions/classes: Metrics data.
+Category: model artifact.
+Can delete?: Safe for runtime, keep for training history.
+Notes: Generated training artifact.
+
+### app/models/jarvis-qwen-lora/train_results.json
+Purpose: Training result metrics.
+Used for: Training reference.
+Called by: No runtime code confirmed.
+Imports: None.
+Important functions/classes: Metrics data.
+Category: model artifact.
+Can delete?: Safe for runtime, keep for training history.
+Notes: Generated artifact.
+
+### app/models/jarvis-qwen-lora/trainer_log.jsonl
+Purpose: Training logs.
+Used for: Debugging model training.
+Called by: No runtime code confirmed.
+Imports: None.
+Important functions/classes: Log data.
+Category: model artifact.
+Can delete?: Safe for runtime.
+Notes: Can be large over time.
+
+### app/models/jarvis-qwen-lora/trainer_state.json
+Purpose: Hugging Face Trainer state.
+Used for: Resuming/analyzing training.
+Called by: No runtime code confirmed.
+Imports: None.
+Important functions/classes: Trainer metadata.
+Category: model artifact.
+Can delete?: Safe for runtime if not resuming training.
+Notes: Keep if continuing training.
+
+### app/models/jarvis-qwen-lora/training_args.bin
+Purpose: Serialized training arguments.
+Used for: Training reproducibility.
+Called by: No runtime code confirmed.
+Imports: None.
+Important functions/classes: Binary training config.
+Category: model artifact.
+Can delete?: Safe for runtime.
+Notes: Keep for reproducibility.
+
+### app/models/jarvis-qwen-lora/checkpoint-*/...
+Purpose: Intermediate training checkpoints from checkpoint-100 through checkpoint-1250.
+Used for: Resuming or comparing training.
+Called by: No runtime code confirmed unless QWEN_LORA_PATH points to a checkpoint.
+Imports: None.
+Important files inside each checkpoint: adapter_config.json, adapter_model.safetensors, chat_template.jinja, optimizer.pt, rng_state.pth, scaler.pt, scheduler.pt, tokenizer.json, tokenizer_config.json, trainer_state.json, training_args.bin, README.md.
+Category: generated model artifact.
+Can delete?: Usually safe to delete old checkpoints after keeping the final model, but do not delete automatically.
+Notes: These are large generated artifacts. Suggested cleanup: keep final model and maybe one best checkpoint, archive or remove the rest after backup.
+
+### app/models/vosk-model-small-bn/README.md
+Purpose: Documentation for Bengali speech model.
+Used for: Human reference.
+Called by: No runtime code directly.
+Imports: None.
+Important functions/classes: None.
+Category: docs/model.
+Can delete?: Keep with model.
+Notes: Model folder name says Vosk, but files include sherpa-onnx style ONNX components. Verify naming.
+
+### app/models/vosk-model-small-bn/decode.py
+Purpose: Standalone decoder example/test for the Bengali speech model.
+Used for: Manual model testing.
+Called by: Developer manually.
+Imports: wave, numpy, sherpa_onnx.
+Important functions/classes: read_wave, main.
+Category: utility/model.
+Can delete?: Safe for runtime, keep for testing/reference.
+Notes: Not imported by app STT path, which currently uses Google STT.
+
+### app/models/vosk-model-small-bn/test.wav
+Purpose: Sample audio for model testing.
+Used for: decode.py testing.
+Called by: Developer manually.
+Imports: None.
+Important functions/classes: Audio file.
+Category: asset/model.
+Can delete?: Safe for runtime.
+Notes: Keep if testing offline STT model.
+
+### app/models/vosk-model-small-bn/.gitattributes
+Purpose: Git attributes for model files.
+Used for: Git/LFS behavior.
+Called by: Git.
+Imports: None.
+Important functions/classes: None.
+Category: config/model.
+Can delete?: Keep if model files are versioned.
+Notes: Usually generated by model repositories.
+
+### app/models/vosk-model-small-bn/am-onnx/encoder.onnx
+Purpose: Encoder ONNX model.
+Used for: Offline speech recognition model.
+Called by: decode.py/sherpa_onnx if used.
+Imports: None.
+Important functions/classes: Binary model graph.
+Category: model.
+Can delete?: Keep if offline Bengali STT model is planned.
+Notes: Not used by current Google STT path.
+
+### app/models/vosk-model-small-bn/am-onnx/decoder.onnx
+Purpose: Decoder ONNX model.
+Used for: Offline speech recognition model.
+Called by: decode.py/sherpa_onnx if used.
+Imports: None.
+Important functions/classes: Binary model graph.
+Category: model.
+Can delete?: Keep if offline Bengali STT model is planned.
+Notes: Not used by current Google STT path.
+
+### app/models/vosk-model-small-bn/am-onnx/joiner.onnx
+Purpose: Joiner ONNX model.
+Used for: Offline speech recognition model.
+Called by: decode.py/sherpa_onnx if used.
+Imports: None.
+Important functions/classes: Binary model graph.
+Category: model.
+Can delete?: Keep if offline Bengali STT model is planned.
+Notes: Not used by current Google STT path.
+
+### app/models/vosk-model-small-bn/am-onnx/opt.py
+Purpose: ONNX optimization helper.
+Used for: Model optimization experiments.
+Called by: Developer manually.
+Imports: onnxruntime.
+Important functions/classes: None.
+Category: utility/model.
+Can delete?: Safe for runtime.
+Notes: Keep if optimizing the offline STT model.
+
+### app/models/vosk-model-small-bn/lang/bpe.model
+Purpose: BPE model for speech tokenizer.
+Used for: Offline speech recognition decoding.
+Called by: sherpa_onnx/decode.py if used.
+Imports: None.
+Important functions/classes: Model data.
+Category: model.
+Can delete?: Keep with offline STT model.
+Notes: Required companion file.
+
+### app/models/vosk-model-small-bn/lang/tokens.txt
+Purpose: Token list for speech model.
+Used for: Offline speech recognition decoding.
+Called by: sherpa_onnx/decode.py if used.
+Imports: None.
+Important functions/classes: Vocabulary tokens.
+Category: model.
+Can delete?: Keep with offline STT model.
+Notes: Required companion file.
+
+### app/models/vosk-model-small-bn/lang/unigram_500.vocab
+Purpose: Vocabulary file for speech model.
+Used for: Offline speech recognition decoding.
+Called by: sherpa_onnx/decode.py if used.
+Imports: None.
+Important functions/classes: Vocabulary data.
+Category: model.
+Can delete?: Keep with offline STT model.
+Notes: Required companion file.
+
+### app/runtime/audio/bangla_reply_latest.mp3
+Purpose: Latest generated Bengali TTS MP3.
+Used for: Playback/debugging of last Bengali response.
+Called by: TTS service at runtime. Not fully confirmed by direct import.
+Imports: None.
+Important functions/classes: Audio file.
+Category: generated runtime asset.
+Can delete?: Safe to delete; app can regenerate.
+Notes: Runtime artifact, not source code.
+
+### app/runtime/audio/bangla_reply_latest.wav
+Purpose: Latest generated Bengali TTS WAV.
+Used for: Playback/debugging of last Bengali response.
+Called by: TTS service at runtime. Not fully confirmed by direct import.
+Imports: None.
+Important functions/classes: Audio file.
+Category: generated runtime asset.
+Can delete?: Safe to delete; app can regenerate.
+Notes: Runtime artifact, not source code.
+
+### scripts/build_exe.ps1
+Purpose: PowerShell build script for packaging Jarvis as an executable.
+Used for: Developer build workflow.
+Called by: Developer manually.
+Imports: None.
+Important functions/classes: PowerShell commands.
+Category: utility.
+Can delete?: Keep if executable builds are needed.
+Notes: Verify paths after dependency changes.
+
+### scripts/test_alias_dataset.py
+Purpose: Tests alias dataset loading/matching/execution behavior.
+Used for: Developer regression testing.
+Called by: Developer manually.
+Imports: action_executor, alias_command_matcher, alias_dataset_loader.
+Important functions/classes: main.
+Category: test.
+Can delete?: Keep.
+Notes: Useful after editing bd_full_alias_dataset.json.
+
+### scripts/test_command_routing.py
+Purpose: Regression test for command routing without opening apps or changing volume.
+Used for: Verifying volume/system-action-first routing and alias routing.
+Called by: Developer manually.
+Imports: AssistantController dynamically after installing stubs.
+Important functions/classes: _install_optional_dependency_stubs, main.
+Category: test.
+Can delete?: Keep.
+Notes: Protects against bugs like "voliom komao" matching Zoom.
+
+### scripts/hardware/README.md
+Purpose: Documentation for hardware hook scripts.
+Used for: Human reference.
+Called by: No code directly.
+Imports: None.
+Important functions/classes: None.
+Category: docs/utility.
+Can delete?: Keep if hardware feature remains.
+Notes: Helps explain custom hook behavior.
+
+### scripts/hardware/example_hardware_hook.ps1
+Purpose: Example PowerShell hardware hook.
+Used for: Demonstrating hardware script integration.
+Called by: hardware_service if selected/executed. Not fully confirmed from UI.
+Imports: None.
+Important functions/classes: PowerShell commands.
+Category: utility.
+Can delete?: Safe if hardware examples are not needed.
+Notes: Treat executable scripts carefully.
+
+### tests/__init__.py
+Purpose: Marks tests as a Python package.
+Used for: Test discovery/imports.
+Called by: pytest/unittest if used.
+Imports: None.
+Important functions/classes: None.
+Category: test.
+Can delete?: Keep if tests package remains.
+Notes: Currently no full test suite found besides scripts.
+
+## Execution Flow
+
+When you run:
+python -m app.main
+
+1. Python imports app/main.py.
+2. main.py configures Qt/Windows process environment and DPI behavior.
+3. Logging is configured, normally writing into data/logs.
+4. Offline guard is installed if OFFLINE_MODE is enabled.
+5. Startup diagnostics check environment/dependencies.
+6. The database is initialized through app/data/db.py.
+7. A PySide6 QApplication is created.
+8. MainWindow from app/ui/main_window.py is created.
+9. MainWindow creates AssistantController using app/core/assistant_controller.py.
+10. AssistantController creates repositories, STTService, TTSService, AdvancedBrain, ActionRegistry, and loads defaults.
+11. MainWindow creates pages from app/ui/pages/*.py and puts them into the navigation stack.
+12. User input from HomePage or voice mode is sent to AssistantController.process or listen_once_and_process.
+
+## Voice Flow
+
+1. User clicks microphone or voice loop captures audio.
+2. AssistantController.listen_once_and_process calls STTService.transcribe_with_retries.
+3. STTService calls GoogleSTTService.
+4. GoogleSTTService configures SpeechRecognition settings: ambient adjustment, energy threshold, pause threshold, phrase threshold, and non-speaking duration.
+5. Audio is cleaned before Google STT: silence trim, volume normalization, too-short/noisy rejection.
+6. Google returns text.
+7. AssistantController.process receives recognized text.
+8. Text is normalized and corrected for common STT mistakes like "voliom" -> "volume".
+9. Hard system actions are checked first.
+10. Alias dataset actions are checked second.
+11. Local intent routing and AI brain fallback happen after that.
+12. The response is saved to command/conversation repositories.
+13. TTSService speaks the reply if voice replies are enabled.
+
+## UI Flow
+
+1. app/main.py creates MainWindow.
+2. MainWindow imports and creates page classes:
+   - HomePage
+   - VoicePage
+   - VoiceModePage
+   - SchedulerPage
+   - BrainPage
+   - ApiBrainPage
+   - AutomationPage
+   - SettingsPage
+   - VisionPage
+3. Shared styles come from app/ui/theme.py.
+4. Reusable cards/buttons/status widgets come from app/ui/components.py.
+5. UI events call methods on MainWindow.
+6. MainWindow calls AssistantController for actual logic.
+7. Page widgets display returned dict fields like response, action, target, success, path, and recognized_text.
+
+## System Action Flow
+
+Examples: volume, mute, unmute, screenshot, Bluetooth settings, folders, shutdown confirmation, CPU usage, internet check.
+
+1. AssistantController.process receives text.
+2. normalize_voice_command cleans it.
+3. _apply_voice_text_correction handles common voice mistakes.
+4. _try_volume_clarification catches bare "volume"/"ভলিউম".
+5. _try_dataset_system_action calls match_dataset_action.
+6. system_action_dataset_loader checks hard rules before dataset/fuzzy matching.
+7. A SystemActionExample record is returned with id, intent, action, target, response.
+8. execute_dataset_action runs system_action_executor.execute_system_action.
+9. system_action_executor logs matched action and executes a safe mapped function.
+10. Dangerous power actions create pending confirmation instead of immediate execution.
+11. Results go back to UI using executor response, not static dataset response.
+
+Important mappings:
+- volume_down, volume_up, mute use safe key fallback when configured.
+- volume_25/50/75/100 use pycaw exact endpoint volume.
+- screenshot saves to app/runtime/screenshots.
+- bluetooth_on/off opens Windows Bluetooth settings.
+- Downloads/Desktop open known folders.
+- cpu_usage/ram_usage/battery/storage use psutil/shutil.
+- internet_status tries a socket connection to google.com:443.
+
+## AI/Brain Flow
+
+1. AssistantController first tries deterministic actions.
+2. If no system/action/alias route handles the input, IntentRouter checks local rules.
+3. If local intent confidence is low or the message looks conversational, AdvancedBrain may handle it.
+4. AdvancedBrain uses app/services/ai provider routing.
+5. LocalFallbackProvider can answer without internet.
+6. QwenLoraProvider can use app/models/jarvis-qwen-lora if USE_QWEN_LORA / USE_TRAINED_QWEN is enabled and dependencies are installed.
+7. Offline guard can block internet providers when OFFLINE_MODE=true.
+8. Older Groq/Gemini style provider names are referenced in the project history/request context, but no active groq_client.py file was present in the current scan. Treat Groq/Gemini as not fully confirmed unless reintroduced in providers/settings.
+
+## Config / Environment Variables
+
+From .env:
+- OFFLINE_MODE: true/false. When true, internet-dependent services should avoid network usage.
+- ENABLE_TTS_SELF_TEST: controls TTS startup self-test.
+- BENGALI_TTS_PROVIDER: selects Bengali TTS provider behavior, currently set to offline.
+- USE_QWEN_LORA: enables Qwen LoRA provider path.
+- USE_TRAINED_QWEN: enables trained Qwen model behavior.
+- QWEN_BASE_MODEL: base Hugging Face model name.
+- QWEN_LORA_PATH: local LoRA adapter path.
+- JARVIS_PERSONA_STYLE: response persona style, currently bn_sir.
+- VOSK_MODEL_PATH: local Bengali speech model path.
+- PIPER_EXE: optional Piper executable path.
+- PIPER_BN_MODEL: optional Piper Bengali model path.
+
+Other settings are stored in data/jarvis.db through SettingsRepository, including STT language, response language, voice reply enabled, wake word enabled, noise reduction enabled, mic sensitivity, Bengali TTS speed, voice id, voice rate, and voice volume.
+
+## Files That Look Unused
+
+These are not confirmed safe to delete, but they look unused, duplicated, or generated:
+
+- app/services/automation/weather_tools.py: Current controller weather path appears to use web_search_service instead.
+- app/services/hardware/hardware_service.py: No direct UI/controller import found in the scan.
+- app/services/speech/realtime_voice_service.py: Present but not clearly part of MainWindow import flow.
+- app/core/response_engine.py: Imported by AssistantController, but much response formatting is also done directly in AssistantController.
+- app/services/system/system_control.py: Still needed for execute_confirmed_action, but overlaps with system_action_executor.py.
+- app/services/automation/system_tools.py: Older local system actions overlap with dataset system actions.
+- app/services/system/file_automation.py and app/services/automation/windows_desktop.py: Both handle file/folder/desktop opening in different ways.
+- app/models/jarvis-qwen-lora/checkpoint-*/: Generated training checkpoints. Usually not needed for runtime if final adapter files are kept.
+- app/runtime/audio/bangla_reply_latest.*: Generated latest TTS files.
+- data/logs/*.log: Runtime logs, intentionally ignored in this document as temporary unless debugging.
+
+## Suggested Cleanup
+
+1. Split AssistantController into smaller modules:
+   - command routing
+   - voice/STT/TTS settings
+   - persistence/logging
+   - direct local actions
+   - system action handling
+
+2. Merge or clearly separate duplicate system paths:
+   - app/services/system/system_action_executor.py
+   - app/services/system/system_control.py
+   - app/services/automation/system_tools.py
+
+3. Merge or document differences between:
+   - app/services/system/file_automation.py
+   - app/services/automation/windows_desktop.py
+
+4. Move manual tests into one place:
+   - test_tts.py
+   - scripts/test_alias_dataset.py
+   - scripts/test_command_routing.py
+
+5. Add real pytest tests for:
+   - volume command matching
+   - Bangla aliases
+   - alias confidence thresholds
+   - pending confirmation safety
+   - system action executor responses
+
+6. Clean model artifacts:
+   - Keep final app/models/jarvis-qwen-lora adapter files.
+   - Archive or remove old checkpoint-* folders only after backup.
+
+7. Clean runtime artifacts:
+   - Add app/runtime/audio/cache, app/runtime/screenshots, and data/logs to .gitignore if not already ignored.
+
+8. Save app/services/speech/tts_service.py as clean UTF-8 without BOM to avoid parser/tooling issues.
+
+9. Keep datasets versioned and tested:
+   - assets/system_action_dataset_500.jsonl
+   - app/generated/bd_full_alias_dataset.json
+
+10. Write a short developer setup guide:
+   - create venv
+   - install requirements
+   - install optional voice/system dependencies
+   - run python -m app.main
+   - run scripts/test_command_routing.py
+

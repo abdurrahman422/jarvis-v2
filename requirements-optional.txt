@@ -1,0 +1,12 @@
+PyAudio
+pyaudiowpatch
+opencv-python
+pytesseract
+Pillow
+python-dotenv
+vosk
+torch
+transformers
+peft
+accelerate
+safetensors

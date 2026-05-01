@@ -1,0 +1,20 @@
+PySide6
+pyttsx3>=2.90
+pywin32
+SpeechRecognition
+PyAudioWPatch; platform_system == "Windows"
+sounddevice
+numpy
+psutil
+pyinstaller
+click==8.2.1
+python-dotenv
+gTTS
+pydub
+playsound==1.2.2
+requests
+beautifulsoup4
+pycaw
+comtypes
+screen-brightness-control
+pyautogui

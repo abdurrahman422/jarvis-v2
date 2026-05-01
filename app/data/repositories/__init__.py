@@ -1,0 +1,6 @@
+from app.data.repositories.alarm_repository import AlarmRepository
+from app.data.repositories.command_repository import CommandRepository
+from app.data.repositories.contacts_repository import ContactsRepository
+from app.data.repositories.conversation_repository import ConversationRepository
+from app.data.repositories.settings_repository import SettingsRepository
+from app.data.repositories.time_management_repository import TimeManagementRepository
